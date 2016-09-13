@@ -182,16 +182,39 @@ public class OPropertyMetaPanel<V> extends AbstractComplexModeMetaPanel<OPropert
 		{
 			OType oType = (OType)getEnteredValue();
 			// Show Linked Class if type is a some kind of link
-			AbstractMetaPanel<OProperty, String, ?> metaPanel = getMetaComponent(OPropertyPrototyper.LINKED_CLASS);
-			if(metaPanel!=null) metaPanel.setVisibilityAllowed(oType!=null && (oType.isLink() || OType.EMBEDDED.equals(oType)));
+			AbstractMetaPanel<OProperty, String, ?> linkedClassPanel = getMetaComponent(OPropertyPrototyper.LINKED_CLASS);
+			if(linkedClassPanel!=null) linkedClassPanel.setVisibilityAllowed(oType!=null && (oType.isLink() || oType.isEmbedded()));
 			
 			// Show Linked Type if type is a some kind of embedded
-			metaPanel = getMetaComponent(OPropertyPrototyper.LINKED_TYPE);
-			if(metaPanel!=null) metaPanel.setVisibilityAllowed(oType!=null && oType.isEmbedded() && !OType.EMBEDDED.equals(oType));
-			
+			AbstractMetaPanel<OProperty, String, ?> linkedTypePanel = getMetaComponent(OPropertyPrototyper.LINKED_TYPE);
+			if(linkedTypePanel!=null) linkedTypePanel.setVisibilityAllowed(oType!=null && oType.isEmbedded() && !OType.EMBEDDED.equals(oType));
+
 			// Show inverse if current type is a link
-			metaPanel = getMetaComponent(CustomAttributes.PROP_INVERSE.getName());
+			AbstractMetaPanel<OProperty, String, ?> metaPanel = getMetaComponent(CustomAttributes.PROP_INVERSE.getName());
 			if(metaPanel!=null) metaPanel.setVisibilityAllowed(oType!=null && oType.isLink());
+			
+		}
+		else if(OPropertyPrototyper.LINKED_CLASS.equals(critery)){
+			//if linked class not empty- hide linked type 
+			AbstractMetaPanel<OProperty, String, ?> linkedClassPanel = getMetaComponent(OPropertyPrototyper.LINKED_CLASS);
+			AbstractMetaPanel<OProperty, String, ?> linkedTypePanel = getMetaComponent(OPropertyPrototyper.LINKED_TYPE);
+			
+			if (linkedClassPanel.getEnteredValue() != null){
+				linkedTypePanel.setEnabled(false);
+			}else{
+				linkedTypePanel.setEnabled(true);
+			}
+		}
+		else if(OPropertyPrototyper.LINKED_TYPE.equals(critery)){
+			//if linked type not empty- hide linked class 
+			AbstractMetaPanel<OProperty, String, ?> linkedClassPanel = getMetaComponent(OPropertyPrototyper.LINKED_CLASS);
+			AbstractMetaPanel<OProperty, String, ?> linkedTypePanel = getMetaComponent(OPropertyPrototyper.LINKED_TYPE);
+			
+			if (linkedTypePanel.getEnteredValue() != null){
+				linkedClassPanel.setEnabled(false);
+			}else{
+				linkedClassPanel.setEnabled(true);
+			}
 		}
 		else if(CustomAttributes.CALCULABLE.getName().equals(critery))
 		{
@@ -200,7 +223,10 @@ public class OPropertyMetaPanel<V> extends AbstractComplexModeMetaPanel<OPropert
 			if(metaPanel!=null) metaPanel.setVisibilityAllowed(calculable!=null && calculable);
 		}
 	}
-
+	
+	
+	
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	protected Component resolveComponent(String id, DisplayMode mode,
@@ -252,7 +278,8 @@ public class OPropertyMetaPanel<V> extends AbstractComplexModeMetaPanel<OPropert
 			}
 			else if(OPropertyPrototyper.LINKED_TYPE.equals(critery))
 			{
-				return new DropDownChoice<OType>(id, (IModel<OType>)getModel(), LINKED_TYPE_OPTIONS).setNullValid(true);
+				return new DropDownChoice<OType>(id, (IModel<OType>)getModel(), LINKED_TYPE_OPTIONS)
+						.setNullValid(true).add(new RefreshMetaContextOnChangeBehaviour());
 			}
 			else if(OPropertyPrototyper.LINKED_CLASS.equals(critery))
 			{

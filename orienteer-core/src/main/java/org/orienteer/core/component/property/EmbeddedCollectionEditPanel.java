@@ -17,17 +17,21 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.util.visit.IVisit;
 import org.apache.wicket.util.visit.IVisitor;
+import org.orienteer.core.OrienteerWebApplication;
 import org.orienteer.core.component.BootstrapSize;
 import org.orienteer.core.component.BootstrapType;
 import org.orienteer.core.component.FAIconType;
 import org.orienteer.core.component.command.AjaxFormCommand;
 import org.orienteer.core.component.visualizer.DefaultVisualizer;
+import org.orienteer.core.component.visualizer.SimpleVisualizer;
 import org.orienteer.core.service.IMarkupProvider;
+import org.orienteer.core.service.IOClassIntrospector;
 
 import ru.ydn.wicket.wicketorientdb.model.CollectionAdapterModel;
 import ru.ydn.wicket.wicketorientdb.model.DynamicPropertyValueModel;
 
 import com.google.inject.Inject;
+import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OProperty;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
@@ -53,10 +57,12 @@ public class EmbeddedCollectionEditPanel<T, M extends Collection<T>> extends For
 		this.finalType = finalType;
 		final DefaultVisualizer visualizer = DefaultVisualizer.INSTANCE;
 		final OType oType = propertyModel.getObject().getLinkedType();
+		final OClass oClass = propertyModel.getObject().getLinkedClass();
 		ListView<T> listView = new ListView<T>("items", new PropertyModel<List<T>>(this, "data")) {
 
 			@Override
 			protected void populateItem(final ListItem<T> item) {
+				if (oType!=null){
 				item.add(visualizer.createComponent("item", DisplayMode.EDIT, documentModel, propertyModel, oType, item.getModel()));
 				item.add(new AjaxFormCommand<Object>("remove", "command.remove")
 						{
@@ -68,6 +74,10 @@ public class EmbeddedCollectionEditPanel<T, M extends Collection<T>> extends For
 						}.setBootstrapSize(BootstrapSize.EXTRA_SMALL)
 						 .setBootstrapType(BootstrapType.DANGER)
 						 .setIcon((String)null));
+				}
+				else if(oClass!=null){
+
+				}
 			}
 			
 			@Override
