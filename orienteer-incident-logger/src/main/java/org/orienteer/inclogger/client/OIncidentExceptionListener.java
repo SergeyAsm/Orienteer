@@ -8,6 +8,7 @@ import org.apache.wicket.request.cycle.IRequestCycleListener;
 import org.apache.wicket.request.cycle.RequestCycle;
 import org.apache.wicket.util.lang.Exceptions;
 import org.orienteer.inclogger.IncidentLogger;
+import org.orienteer.inclogger.core.interfaces.ILogger;
 
 import com.orientechnologies.orient.core.exception.OSchemaException;
 import com.orientechnologies.orient.core.exception.OSecurityException;
@@ -32,7 +33,9 @@ public class OIncidentExceptionListener extends AbstractRequestCycleListener{
 		}
 		else
 		{
-			IncidentLogger.get().makeLogger().incident(ex);
+			ILogger logger = IncidentLogger.get().makeLogger();
+			logger.getData().set("type", "exception");//later, can make interface method logger.setType(type)
+			logger.incident(ex);
 			return null;
 		}
 	}

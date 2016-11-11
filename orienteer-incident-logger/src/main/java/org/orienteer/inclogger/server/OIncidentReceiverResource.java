@@ -35,6 +35,7 @@ public class OIncidentReceiverResource extends AbstractResource {
 		final WebRequest request = (WebRequest) attributes.getRequest();
 		final HttpServletRequest httpRequest = (HttpServletRequest) request.getContainerRequest();
 		final ResourceResponse response = new ResourceResponse();
+	    
 		response.setContentType("text/plain");
 		if(response.dataNeedsToBeWritten(attributes))
 		{
@@ -47,8 +48,10 @@ public class OIncidentReceiverResource extends AbstractResource {
 					StringWriter received = new StringWriter();
 					IOUtils.copy(httpRequest.getInputStream(), received);
 
-					LOG.info("received="+received);
-					getReceiver().receive(received.toString());
+					String clientAddress = httpRequest.getRemoteHost();
+
+					LOG.info("client="+clientAddress+" received="+received);
+					getReceiver().receive(clientAddress,received.toString());
 				}
 			} catch (Throwable e)
 			{

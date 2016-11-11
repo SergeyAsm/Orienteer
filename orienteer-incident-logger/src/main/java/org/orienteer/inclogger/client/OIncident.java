@@ -22,6 +22,7 @@ public class OIncident extends HashMap<String,String> {
 
 	public OIncident(ODocument doc) {
 		
+	    put("type", (String) doc.field("type"));
 	    put("application", (String) doc.field("application"));
 	    put("dateTime", (String) doc.field("dateTime"));
 	    put("userName", (String) doc.field("userName"));

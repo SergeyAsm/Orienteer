@@ -73,16 +73,73 @@ public class OIncidentData implements IData{
 	}
 
 	@Override
-	public void applyData(String newData) {
+	public void applyData(String clientInfo,String newData) {
 		List<Map<String,String>> anotherData = gson.fromJson(newData, ArrayList.class);
 		for (Map<String,String> incident : anotherData){
 			ODocument doc = new ODocument("OIncident");
 			for(Entry<String, String> entry : incident.entrySet()) {
 				doc.field(entry.getKey(),entry.getValue());
 			}		
+			doc.field("host",clientInfo);
 			doc.field("sended",2);
 			doc.field("recieved",1);
 			doc.save();
+			updateStructuredData(doc);
 		}
+	}
+	
+	private void updateStructuredData(ODocument newIncident) {
+		ODatabaseDocument db = OrienteerWebApplication.get().getDatabase();
+		
+		String host = (String) newIncident.field("host");
+		String application = (String) newIncident.field("application");
+		String type = (String) newIncident.field("type");
+
+		ODocument appDoc = getOrMakeByTypeAndName("OIncidentApplication",application,null);
+		
+		ODocument hostDoc = getOrMakeByTypeAndName("OIncidentHost",host,appDoc);
+
+		ODocument typeDoc = getOrMakeByTypeAndName("OIncidentType",type,hostDoc);
+		db.commit();
+		db.begin();
+		
+		newIncident.field("typeLink",typeDoc.getIdentity());
+		newIncident.save();
+		
+		((List)typeDoc.field("incidents")).add(newIncident.getIdentity());
+		typeDoc.field("parent",hostDoc.getIdentity());
+		typeDoc.save();
+
+		((List)hostDoc.field("types")).add(typeDoc.getIdentity());
+		typeDoc.field("parent",appDoc.getIdentity());
+		hostDoc.save();
+
+		((List)appDoc.field("hosts")).add(hostDoc.getIdentity());
+		appDoc.save();
+
+		db.commit();
+	}
+	
+	private ODocument getOrMakeByTypeAndName(String type,String name,ODocument parent){
+		ODatabaseDocument db = OrienteerWebApplication.get().getDatabase();
+		
+		OSQLSynchQuery<ODocument> query;
+		List<ODocument> queryData;
+		if (parent!=null){
+			query = new OSQLSynchQuery<ODocument>("select from "+type+" where name=? and parent=? ");
+			queryData = db.command(query).execute(name,parent.getIdentity());
+		}else{
+			query = new OSQLSynchQuery<ODocument>("select from "+type+" where name = ?");
+			queryData = db.command(query).execute(name);
+		}
+		ODocument doc;
+		if (queryData.isEmpty()){
+			doc = new ODocument(type);
+			doc.field("name",name);
+			doc.save();
+		}else{
+			doc = queryData.get(0);
+		}
+		return doc;
 	}
 }

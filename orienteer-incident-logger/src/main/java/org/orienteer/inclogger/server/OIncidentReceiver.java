@@ -23,9 +23,9 @@ public class OIncidentReceiver implements IReceiver{
 	}
 
 	@Override
-	public void receive(String data) {
+	public void receive(String clientInfo,String data) {
 		if (server!=null){
-			server.onReceive(data);
+			server.onReceive(clientInfo,data);
 		}
 	}
 
