@@ -1,9 +1,12 @@
 package org.orienteer.inclogger.core;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.orienteer.core.OrienteerWebApplication;
 import org.orienteer.inclogger.client.OIncident;
@@ -12,6 +15,7 @@ import org.orienteer.inclogger.core.interfaces.ILoggerData;
 
 import com.google.gson.Gson;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
+import com.orientechnologies.orient.core.db.record.ORecordLazySet;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
@@ -90,6 +94,7 @@ public class OIncidentData implements IData{
 	
 	private void updateStructuredData(ODocument newIncident) {
 		ODatabaseDocument db = OrienteerWebApplication.get().getDatabase();
+		db.commit();
 		
 		String host = (String) newIncident.field("host");
 		String application = (String) newIncident.field("application");
@@ -100,24 +105,33 @@ public class OIncidentData implements IData{
 		ODocument hostDoc = getOrMakeByTypeAndName("OIncidentHost",host,appDoc);
 
 		ODocument typeDoc = getOrMakeByTypeAndName("OIncidentType",type,hostDoc);
-		db.commit();
-		db.begin();
 		
 		newIncident.field("typeLink",typeDoc.getIdentity());
 		newIncident.save();
-		
-		((List)typeDoc.field("incidents")).add(newIncident.getIdentity());
+		Set<Object> incidents = typeDoc.field("incidents");
+		if (incidents == null) incidents = new LinkedHashSet();
+		incidents.add(newIncident);
+		typeDoc.field("incidents",incidents);
 		typeDoc.field("parent",hostDoc.getIdentity());
 		typeDoc.save();
 
-		((List)hostDoc.field("types")).add(typeDoc.getIdentity());
-		typeDoc.field("parent",appDoc.getIdentity());
-		hostDoc.save();
+		Set<Object> types = hostDoc.field("types");
+		if (types == null) types = new LinkedHashSet<>();
+		if (!types.contains(typeDoc)){
+			types.add(typeDoc);
+			hostDoc.field("types",types);
+			hostDoc.field("parent",appDoc.getIdentity());
+			hostDoc.save();
+		}
 
-		((List)appDoc.field("hosts")).add(hostDoc.getIdentity());
-		appDoc.save();
+		Set<Object> hosts = appDoc.field("hosts");
+		if (hosts == null) hosts = new LinkedHashSet<>();
+		if (!hosts.contains(hostDoc)){
+			hosts.add(hostDoc);
+			appDoc.field("hosts",hosts);
+			appDoc.save();
+		}
 
-		db.commit();
 	}
 	
 	private ODocument getOrMakeByTypeAndName(String type,String name,ODocument parent){
@@ -126,10 +140,10 @@ public class OIncidentData implements IData{
 		OSQLSynchQuery<ODocument> query;
 		List<ODocument> queryData;
 		if (parent!=null){
-			query = new OSQLSynchQuery<ODocument>("select from "+type+" where name=? and parent=? ");
+			query = new OSQLSynchQuery<ODocument>("select from "+type+" where name like ? and parent=? ");
 			queryData = db.command(query).execute(name,parent.getIdentity());
 		}else{
-			query = new OSQLSynchQuery<ODocument>("select from "+type+" where name = ?");
+			query = new OSQLSynchQuery<ODocument>("select from "+type+" where name like ?");
 			queryData = db.command(query).execute(name);
 		}
 		ODocument doc;
