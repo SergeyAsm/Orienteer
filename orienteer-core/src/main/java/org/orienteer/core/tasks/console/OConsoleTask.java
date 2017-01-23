@@ -47,6 +47,7 @@ public class OConsoleTask extends OTask {
 		final String input = (String) getField(Field.INPUT); 
 		otaskSession.setInput(input);
 		otaskSession.setDeleteOnFinish((boolean) getField(OTask.Field.AUTODELETE_SESSIONS));
+		otaskSession.setOTask(this);
 		try{
 			Thread innerThread = new Thread(new Runnable(){
 				@Override
@@ -65,7 +66,11 @@ public class OConsoleTask extends OTask {
 								
 								@Override
 								public void interrupt() throws Exception {
-									if (innerProcess.isAlive()){
+									try {
+										innerProcess.exitValue();
+										//There is exit code: process is finished already
+									} catch (IllegalThreadStateException e) {
+										//Process is active - destroying
 										innerProcess.destroy();
 									}
 								}
